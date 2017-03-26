@@ -9,8 +9,8 @@ A collection of *some* compat simple scripts to provide *some* of the features i
 Setup and examples
 ------------------
 
-- Please make sure you've installed bluez (either newer bluez versions through source or packages) python and related dbus packages listed in example below:
-<pre>sudo apt-get install python python-dbus python-gobject</pre>
+- Please make sure you've installed bluez (either newer bluez versions through source or packages) bluez-utils (for btmgmt) python and related dbus packages listed in example below:
+<pre>python-dbus python-gobject dbus-glib</pre>
 
 - Clone this repo
 <pre>
