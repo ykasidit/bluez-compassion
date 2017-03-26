@@ -25,8 +25,8 @@ g_commands_dict = {
 
 
 def print_dict_items(d):
-    for i in d.items():
-        print i
+    for i in list(d.items()):
+        print(i)
 
 
 def get_property(iface, prop):
@@ -44,67 +44,67 @@ def set_property(iface, prop, val):
 
 
 def do_piscan(adapter, cmd_args):
-    print 'starting function:', inspect.stack()[0][3]
+    print('starting function:', inspect.stack()[0][3])
     set_property(adapter,'DiscoverableTimeout',dbus.UInt32(0))
     set_property(adapter, 'Discoverable',True)
-    print "done piscan"
+    print("done piscan")
 
 
 def do_noscan(adapter, cmd_args):
-    print 'starting function:', inspect.stack()[0][3]
+    print('starting function:', inspect.stack()[0][3])
     set_property(adapter, 'Discoverable',False)
-    print "done noscan"
+    print("done noscan")
 
 
 def do_get_discov(adapter, cmd_args):
-    print 'starting function:', inspect.stack()[0][3]
-    print get_property(adapter, 'Discoverable')
+    print('starting function:', inspect.stack()[0][3])
+    print(get_property(adapter, 'Discoverable'))
 
 
 def do_pairable(adapter, cmd_args):
-    print 'starting function:', inspect.stack()[0][3]
+    print('starting function:', inspect.stack()[0][3])
     if int(cmd_args[1]) == 1:
-        print "enable Pairable"
+        print("enable Pairable")
         set_property(adapter, "Pairable", True)
     elif int(cmd_args[1]) == 0:
-        print "disable Pairable"
+        print("disable Pairable")
         set_property(adapter, "Pairable", False)
     elif int(cmd_args[1]) == -1:
-        print "get Pairable:",get_property(adapter, "Pairable")
+        print("get Pairable:",get_property(adapter, "Pairable"))
     else:
-        print "INVALID: only options 0, 1 and -1 are allowed for pairable (disable, enable, and get respectively)."
+        print("INVALID: only options 0, 1 and -1 are allowed for pairable (disable, enable, and get respectively).")
     
 
 def do_class(adapter, cmd_args):
-    print 'starting function:', inspect.stack()[0][3]
+    print('starting function:', inspect.stack()[0][3])
     "NOTE: We're calling btmgmt here so make sure you have rights (root)."
     leg_class = cmd_args[1] # like 0x020300 means service_class 02 - device_class: major 03 minor 00
     leg_class = leg_class.replace("0x","",1)
     serv_class = "0x"+leg_class[0:2]
     major = "0x"+leg_class[2:4]
     minor = "0x"+leg_class[4:6]
-    print "splitted hex string parts: ",serv_class,major,minor
+    print("splitted hex string parts: ",serv_class,major,minor)
     shell_cmd = "btmgmt class "+str(int(major,16))+" "+str(int(minor,16))
-    print "run shell_cmd:",shell_cmd
+    print("run shell_cmd:",shell_cmd)
     out = subprocess.check_output(shell_cmd,shell=True)
-    print "set class through btmgmt output: "+out
+    print("set class through btmgmt output: "+out)
 
 
 def do_get_power(adapter, cmd_args):
-    print 'starting function:', inspect.stack()[0][3]
-    print "current power state: ",get_property(adapter, 'Powered')
+    print('starting function:', inspect.stack()[0][3])
+    print("current power state: ",get_property(adapter, 'Powered'))
 
 
 def do_down(adapter, cmd_args):
-    print 'starting function:', inspect.stack()[0][3]
+    print('starting function:', inspect.stack()[0][3])
     set_property(adapter, 'Powered', False)
-    print "done powered false"
+    print("done powered false")
 
 
 def do_up(adapter, cmd_args):
-    print 'starting function:', inspect.stack()[0][3]
+    print('starting function:', inspect.stack()[0][3])
     set_property(adapter, 'Powered', True)
-    print "done powered true"    
+    print("done powered true")    
             
 
 def parse_cmd_args():
@@ -130,30 +130,30 @@ def parse_cmd_args():
 if __name__ == '__main__':
     args = parse_cmd_args()
     cmd_args = args['cmd_args']
-    print "cmd_args len",len(args['cmd_args'])
+    print("cmd_args len",len(args['cmd_args']))
     if len(args['cmd_args']) == 0:
-        print "INVALID: command not specified - supported_commands:"
+        print("INVALID: command not specified - supported_commands:")
         print_dict_items(g_commands_dict)
         exit(-1)
-    print 'cmd_args:',cmd_args
+    print('cmd_args:',cmd_args)
 
     bus = dbus.SystemBus()
 
     adapter_path = bluezutils.find_adapter(args['a']).object_path
-    print "adapter_path:",adapter_path
+    print("adapter_path:",adapter_path)
 
     adapter = dbus.Interface(
         bus.get_object("org.bluez", adapter_path),
 	"org.bluez.Adapter1"
     )
-    print "adapter:",adapter
+    print("adapter:",adapter)
 
     # read and work through commands
     cmd = args['cmd_args'][0]
     if cmd in g_commands_dict:
-        print "starting command: ", cmd
+        print("starting command: ", cmd)
         globals()['do_'+cmd](adapter, cmd_args)
     else:
-        print "ERROR: command","'"+args['cmd_args'][0]+"'","is not in the supported list - we currently only support: "
+        print("ERROR: command","'"+args['cmd_args'][0]+"'","is not in the supported list - we currently only support: ")
         print_dict_items(g_commands_dict)
         exit(-2)
