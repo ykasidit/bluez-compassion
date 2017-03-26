@@ -78,12 +78,13 @@ def do_pairable(adapter, cmd_args):
 def do_class(adapter, cmd_args):
     print 'starting function:', inspect.stack()[0][3]
     "NOTE: We're calling btmgmt here so make sure you have rights (root)."
-    leg_class = cmd_args[1] # like 0x020300
+    leg_class = cmd_args[1] # like 0x020300 means service_class 02 - device_class: major 03 minor 00
     leg_class = leg_class.replace("0x","",1)
-    major = "0x"+leg_class[0:3]
-    minor = "0x"+leg_class[3:6]
-    print "splitted hex string parts: ",major,minor
-    out = subprocess.check_output("btmgmt class "+major+" "+minor,shell=True)
+    serv_class = "0x"+leg_class[0:2]
+    major = "0x"+leg_class[2:4]
+    minor = "0x"+leg_class[4:6]
+    print "splitted hex string parts: ",serv_class,major,minor
+    out = subprocess.check_output("btmgmt class "+str(int(major,16))+" "+str(int(minor,16)),shell=True)
     print "set class through btmgmt output: "+out
 
 
