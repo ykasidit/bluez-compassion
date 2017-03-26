@@ -34,7 +34,7 @@ cd bluez-compassion
 <pre>./hciconfig -a hci0 pairable 1</pre>
 
 - Set device class:
-Note: This is using btmgmt which needs root and also I don't know how to use it to set the 'service class' yet so only major/minor (last 4 hex digits) will go through.
+Note: This is using btmgmt which needs root and also I don't know how to use it to set the 'service class' yet so only major/minor (last 4 hex digits) will go through. And it seems to fail as 'invalid' in many cases too.
 <pre>sudo ./hciconfig -a hci0 class 0x000100</pre>
 
 

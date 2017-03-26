@@ -84,7 +84,9 @@ def do_class(adapter, cmd_args):
     major = "0x"+leg_class[2:4]
     minor = "0x"+leg_class[4:6]
     print "splitted hex string parts: ",serv_class,major,minor
-    out = subprocess.check_output("btmgmt class "+str(int(major,16))+" "+str(int(minor,16)),shell=True)
+    shell_cmd = "btmgmt class "+str(int(major,16))+" "+str(int(minor,16))
+    print "run shell_cmd:",shell_cmd
+    out = subprocess.check_output(shell_cmd,shell=True)
     print "set class through btmgmt output: "+out
 
 
