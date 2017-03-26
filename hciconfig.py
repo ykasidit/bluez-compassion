@@ -87,7 +87,7 @@ def do_class(adapter, cmd_args):
     shell_cmd = "btmgmt class "+str(int(major,16))+" "+str(int(minor,16))
     print("run shell_cmd:",shell_cmd)
     out = subprocess.check_output(shell_cmd,shell=True)
-    print("set class through btmgmt output: "+out)
+    print("set class through btmgmt output: "+str(out))
 
 
 def do_get_power(adapter, cmd_args):
