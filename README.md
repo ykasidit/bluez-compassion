@@ -1,5 +1,5 @@
-bluez-compassion - classic compat simple scripts
-================================================
+bluez-compassion - compat simple scripts for legacy bluez tools
+===============================================================
 
 A collection of *some* compat simple scripts to provide *some* of the features in classic bluez tools like 'hciconfig' - which have been deprecated/removed from newer bluez releases like version '5.44'. (Just to avoid re-implementing old code that uses these tools...)
 
