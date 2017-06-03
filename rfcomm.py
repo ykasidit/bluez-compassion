@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# example server run: -p "/my_serial_port" -n "spp" -s -C 1 -u "0x1101"
+# example server run: python rfcomm.py -p "/my_serial_port" -n "spp" -s -C 1 -u "0x1101"
 
 from __future__ import absolute_import, print_function, unicode_literals
 
@@ -12,6 +12,8 @@ import dbus
 import dbus.service
 import dbus.mainloop.glib
 import bluezutils
+import multiprocessing as mp
+import time
 
 
 try:
@@ -19,11 +21,32 @@ try:
 except ImportError:
   import gobject as GObject
 
+
+MAX_READ_SIZE = 2048
+  
+def _read_fd_and_print(fd):
+        print("_read_fd_and_print: fd "+str(fd))
+        i = 0
+        while(True):
+                print("pre seleep")
+                time.sleep(1.0)
+                print("pre write hello "+str(i))
+                i += 1
+                s = "hello {}".format(i)
+                #print "pre write s"
+                os.write(fd, s)
+                #read = os.read(fd, MAX_READ_SIZE)
+                #print("read: "+str(read))
+        return
+
 class Profile(dbus.service.Object):
 	fd = -1
 
 	@dbus.service.method("org.bluez.Profile1",
 					in_signature="", out_signature="")
+
+          
+        
 	def Release(self):
 		print("Release")
 		mainloop.quit()
@@ -38,13 +61,25 @@ class Profile(dbus.service.Object):
 	def NewConnection(self, path, fd, properties):
 		self.fd = fd.take()
 		print("NewConnection(%s, %d)" % (path, self.fd))
+                print("type fd", type(fd))
+                print("self.fd", str(self.fd))
+                """
 		for key in properties.keys():
 			if key == "Version" or key == "Features":
 				print("  %s = 0x%04x" % (key, properties[key]))
 			else:
 				print("  %s = %s" % (key, properties[key]))
                                 self.fd = fd.take()
+                """
                 print("NewConnection(%s, %d)" % (path, self.fd))
+                print("pre proc cre")
+                proc = mp.Process(target=_read_fd_and_print, args=(self.fd,))
+                print("pre proc start")
+                proc.start()
+                print("proc started")
+                while(True):
+                        print("pre seleep")
+                        time.sleep(1.0)
                 # start reader thread for self.fd
                 # start writer thread for self.fd
                 """
