@@ -1,10 +1,32 @@
 import dbus
+import subprocess
 
 # modified iteritems to items() for python3 - from bluez-5.7/test/bluezutils.py
 
 SERVICE_NAME = "org.bluez"
 ADAPTER_INTERFACE = SERVICE_NAME + ".Adapter1"
 DEVICE_INTERFACE = SERVICE_NAME + ".Device1"
+MIN_BLUEZ_VER = 5.44
+
+
+def raise_ex_if_bluez_ver_too_old():
+	is_bluez_ver_compatiable(do_raise=True)
+
+
+def is_bluez_ver_compatiable(do_raise=False):
+	ver = float(get_bluez_ver_str())
+	if ver > MIN_BLUEZ_VER:
+		return True
+	emsg = "bluez-compassion requires bluez version {} or newer. (found ver {})".format(MIN_BLUEZ_VER, ver)
+	if do_raise:
+		raise Exception(emsg)
+	print emsg
+	return False
+
+
+def get_bluez_ver_str():
+        return subprocess.check_output("bluetoothctl -v", shell=True).strip()
+
 
 def get_managed_objects():
 	bus = dbus.SystemBus()
@@ -47,3 +69,7 @@ def find_device_in_objects(objects, device_address, adapter_pattern=None):
 			return dbus.Interface(obj, DEVICE_INTERFACE)
 
 	raise Exception("Bluetooth device not found")
+
+
+# run to check on import
+raise_ex_if_bluez_ver_too_old()
