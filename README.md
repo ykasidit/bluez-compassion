@@ -16,7 +16,7 @@ Setup and examples
 ------------------
 
 - Please make sure you've removed older bluez versions (this may break your existing bluetooth tools though). Then, install bluez 5.45 or newer. You can see http://blog.mrgibbs.io/bluez-5-39-ble-setup-on-the-raspberry-pi/ for examples. In my case, below worked for me on Ubuntu 16.04:
-**WARNING:** This step will remove the official 'bluez' from your system and most of your existing/legacy bluetooth tools/commands would not work! ('bluetoothctl' would exist thougm, and is the recommended/updated tool.)
+**WARNING:** This step will remove the official 'bluez' from your system and most of your existing/legacy bluetooth tools/commands would not work! ('bluetoothctl' would exist though, and is the recommended/updated tool.)
 <pre>
 sudo apt-get remove bluez
 wget http://www.kernel.org/pub/linux/bluetooth/bluez-5.45.tar.xz
