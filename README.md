@@ -56,7 +56,7 @@ cd bluez-compassion
 - Set pairable:
 <pre>./hciconfig -a hci0 pairable 1</pre>
 
-- Run the EcoDroidLink's auto pair/accept agent - keep it in the background:
+- Run the [EcoDroidLink's](https://github.com/ykasidit/ecodroidlink) auto pair/accept agent - keep it in the background:
 <pre>./edl_agent &</pre>
 
 - Run a 'rfcomm server' (to make a wireless character device - Serial/COM port) waiting for incomming connections:
