@@ -53,10 +53,12 @@ cd bluez-compassion
 - Set pairable:
 <pre>./hciconfig -a hci0 pairable 1</pre>
 
-- Use 'bluetoothctl' to manually pair with your device/phone as in https://wiki.archlinux.org/index.php/Bluetooth#Configuration_via_the_CLI
+- Use 'bluetoothctl' to manually pair with your device/phone as in https://wiki.archlinux.org/index.php/Bluetooth#Configuration_via_the_CLI (also follow its next topic: 'Auto power-on after boot'). Leave the 'bluetoothctl' (with default-agent) open so you can type 'yes' to authorize when the remote device connects to us in the next step.
 
 - Run a 'rfcomm server' (to make a wireless character device - Serial/COM port) waiting for incomming connections:
-
+(NOTE: very early stage - can now read/write with stdin only... but working with remote Android device connecting via the 'Bluetooth Terminal' app.)
+<pre>python rfcomm.py -p "/my_serial_port" -n "spp" -s -C 1 -u "0x1101"</pre>
+Then you can type and press enter here to get it shown/sent to the remote device, type/send from the remote device to get it shown here...
 
 ---
 
