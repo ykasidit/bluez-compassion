@@ -1,5 +1,5 @@
-bluez-compassion - Compat Simple Scripts for rfcomm Input Output on Newer BlueZ versions
-=======================================================================================
+bluez-compassion - Compat Simple Scripts for rfcomm I/O on Newer blueZ versions
+===============================================================================
 
 bluez-compassion aims to provide simple/scriptable commands to get Bluetooth classic IO (starting for 'server' needs) working on newer BlueZ versions, through simple 'legacy-like' command naming (these commands have been deprecated/removed from newer bluez releases - v5.44 onwards) like:
   - hciconfig
