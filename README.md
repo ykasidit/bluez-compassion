@@ -61,6 +61,8 @@ cd bluez-compassion
 - Run a 'rfcomm server' (to make a wireless character device - Serial/COM port) waiting for incomming connections:
 <pre>./rfcomm -p "/my_serial_port" -n "spp" -s -C 1 -u "0x1101"</pre>
 
+- Connect from your rfcomm 'client' device. (You can use an Android device connecting via the 'Bluetooth Terminal' app.)
+
 Then you can type and press enter here to get it sent/shown on the remote device, type/send from the remote device to get it shown here! Congratulatons! You can now implement the above in your own scripts then redirect this stage's stdin/stdout to/from your script/program.
 
 NOTE: very early stage - can now read/write with stdin/stdout only... but it is already working with remote Android device connecting via the 'Bluetooth Terminal' app. Also the write from the stdin would have apx 1 sec delay as it's 'sleeping' if it failed to find data from stdin previously.
