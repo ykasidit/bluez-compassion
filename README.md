@@ -80,3 +80,10 @@ Note: This is using deprecated btmgmt which needs root, and doesn't get built in
 
 - Try power off the Bluetooth adapter:
 <pre>./hciconfig -a hci0 down</pre>
+
+---
+
+LICENSE
+-------
+
+This project is released under the same license as 'BlueZ' - GNU GPL - Please see the LICENSE file.
