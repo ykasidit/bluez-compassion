@@ -1,5 +1,5 @@
-bluez-compassion - Compat Simple Scripts for rfcomm I/O on Newer blueZ versions
-===============================================================================
+bluez-compassion - Compat-like 'easily Scriptable' Scripts for rfcomm I/O on Newer blueZ versions
+=================================================================================================
 
 bluez-compassion aims to provide simple/scriptable commands to get Bluetooth classic IO (starting for 'server' needs) working on newer BlueZ versions, through simple 'legacy-like' command naming (these commands have been deprecated/removed from newer bluez releases - v5.44 onwards) like:
   - hciconfig
@@ -30,6 +30,8 @@ sudo systemctl daemon-reload
 sudo systemctl enable bluetooth
 </pre>
 
+- Reboot this host/computer/device.
+
 - Please install python and related dbus packages below:
 <pre>
 python-dbus python-gobject dbus-glib
@@ -53,18 +55,13 @@ cd bluez-compassion
 - Set pairable:
 <pre>./hciconfig -a hci0 pairable 1</pre>
 
-- Open a new terminal with 'bluetoothctl' and enter:
-<pre>
-power on
-default-agent
-</pre>
-  - To manually pair with your device/phone - do as in https://wiki.archlinux.org/index.php/Bluetooth#Configuration_via_the_CLI (also follow its next topic: 'Auto power-on after boot').
-  - Leave the 'bluetoothctl' (with default-agent) open so you can type 'yes' to authorize when the remote device connects to us in the next step.
+- Run the EcoDroidLink's auto pair/accept agent:
+<pre>./edl_agent</pre>
 
 - Run a 'rfcomm server' (to make a wireless character device - Serial/COM port) waiting for incomming connections:
 <pre>./rfcomm -p "/my_serial_port" -n "spp" -s -C 1 -u "0x1101"</pre>
 
-Then you can type and press enter here to get it sent/shown on the remote device, type/send from the remote device to get it shown here! Congratulatons!
+Then you can type and press enter here to get it sent/shown on the remote device, type/send from the remote device to get it shown here! Congratulatons! You can now implement the above in your own scripts then redirect this stage's stdin/stdout to/from your script/program.
 
 NOTE: very early stage - can now read/write with stdin/stdout only... but it is already working with remote Android device connecting via the 'Bluetooth Terminal' app. Also the write from the stdin would have apx 1 sec delay as it's 'sleeping' if it failed to find data from stdin previously.
 
@@ -76,8 +73,9 @@ Other notable commands
 ----------------------
 
 - Set device class:
-TODO: re-implement through python-dbus
-Note: This is using deprecated btmgmt which needs root, and doesn't get built in the default settings of new bluez source like 5.45 - and also I don't know how to use it to set the 'service class' yet so only major/minor (last 4 hex digits) will go through. And it seems to fail as 'invalid' in many cases too.
+
+Note: This is using deprecated btmgmt which needs root, and doesn't get built in the default settings of new bluez source like 5.45 - and also I don't know how to use it to set the 'service class' yet so only major/minor (last 4 hex digits) will go through. And it seems to fail as 'invalid' in many cases too. (TODO: re-implement set device class through python-dbus)
+
 <pre>sudo ./hciconfig -a hci0 class 0x000100</pre>
 
 - Try power off the Bluetooth adapter:
