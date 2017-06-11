@@ -196,6 +196,8 @@ if __name__ == '__main__':
     if not options.uuid:
         options.uuid = str(uuid.uuid4())
 
+    print("rfcomm.py calling RegisterProfile")
     manager.RegisterProfile(options.path, options.uuid, opts)
+    print("rfcomm.py calling RegisterProfile - done - waiting for incoming connections...")
 
     mainloop.run()

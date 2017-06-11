@@ -57,8 +57,8 @@ cd bluez-compassion
 
 - Run a 'rfcomm server' (to make a wireless character device - Serial/COM port) waiting for incomming connections:
 (NOTE: very early stage - can now read/write with stdin only... but working with remote Android device connecting via the 'Bluetooth Terminal' app.)
-<pre>python rfcomm.py -p "/my_serial_port" -n "spp" -s -C 1 -u "0x1101"</pre>
-Then you can type and press enter here to get it shown/sent to the remote device, type/send from the remote device to get it shown here...
+<pre>./rfcomm -p "/my_serial_port" -n "spp" -s -C 1 -u "0x1101"</pre>
+Then you can type and press enter here to get it sent/shown on the remote device, type/send from the remote device to get it shown here...
 
 ---
 
