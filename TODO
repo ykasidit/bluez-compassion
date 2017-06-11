@@ -1,7 +1,3 @@
-* handle/cleanup disconnected clients
-
-* try get it to handle SIGINT ctrl-c.
-
 * client mode.
 
 * re-implement set device class through python-dbus?
