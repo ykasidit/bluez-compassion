@@ -62,9 +62,12 @@ default-agent
   - Leave the 'bluetoothctl' (with default-agent) open so you can type 'yes' to authorize when the remote device connects to us in the next step.
 
 - Run a 'rfcomm server' (to make a wireless character device - Serial/COM port) waiting for incomming connections:
-(NOTE: very early stage - can now read/write with stdin only... but working with remote Android device connecting via the 'Bluetooth Terminal' app.)
 <pre>./rfcomm -p "/my_serial_port" -n "spp" -s -C 1 -u "0x1101"</pre>
-Then you can type and press enter here to get it sent/shown on the remote device, type/send from the remote device to get it shown here...
+
+Then you can type and press enter here to get it sent/shown on the remote device, type/send from the remote device to get it shown here! Congratulatons!
+
+NOTE: very early stage - can now read/write with stdin/stdout only... but it is already working with remote Android device connecting via the 'Bluetooth Terminal' app. Also the write from the stdin would have apx 1 sec delay as it's 'sleeping' if it failed to find data from stdin previously.
+
 NOTE: Do not use the '-N' named-pipe mode yet (for example to read/write to from /dev/rfcomm0 instead of stdin/stdout - it has lots of issues mentioned in a git commit msg - it is recommended to use the above example instead).
 
 ---
