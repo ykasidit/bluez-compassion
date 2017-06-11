@@ -72,7 +72,8 @@ NOTE: Do not use the '-N' named-pipe mode yet (for example to read/write to from
 
 ---
 
-Other notable commands:
+Other notable commands
+----------------------
 
 - Set device class:
 TODO: re-implement through python-dbus
