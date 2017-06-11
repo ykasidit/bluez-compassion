@@ -25,7 +25,7 @@ def is_bluez_ver_compatiable(do_raise=False):
 
 
 def get_bluez_ver_str():
-        return subprocess.check_output("bluetoothctl -v", shell=True).strip()
+	return subprocess.check_output("bluetoothctl -v", shell=True).strip()
 
 
 def get_managed_objects():

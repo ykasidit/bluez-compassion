@@ -18,42 +18,63 @@ import bluezutils
 import multiprocessing as mp
 import time
 import subprocess
+import select
+import traceback
 
 try:
     from gi.repository import GObject
 except ImportError:
     import gobject as GObject
 
+
 g_named_pipe_to_create_path = None
 g_srcfd = None
 g_targetfd = None
 MAX_READ_SIZE = 2048
 
+def cleanup():
+    global g_srcfd
+    global g_targetfd
+
+    print("cleanup() start")
+
+    # if its stdin/stdout - dont close them
+
+    if not g_srcfd is None and g_srcfd != sys.stdin.fileno():
+        print("cleanup() g_srcfd")
+        os.close(g_srcfd)
+        g_srcfd = None
+
+    if not g_targetfd is None and g_targetfd != sys.stdout.fileno():
+        print("cleanup() g_targetfd")
+        os.close(g_targetfd)
+        g_targetfd = None
+        
+    print("cleanup() done")
+    
 
 def _read_fd_to_targetfd(fd, targetfd):
     print("_read_fd_and_print: fd " + str(fd))
 
     i = 0
 
-    while (True):
-        i += 1
+    try:
+        while (True):
+            i += 1
 
-        read = None
+            read = None
 
-        try:
+            readable, writable, exceptional = select.select([fd], [], [])
             read = os.read(fd, MAX_READ_SIZE)
-        except Exception as e:
-            #print("os.read (likely nothing to read yet...) exception: "+str(e))
-            #print("waiting 1 sec before retry reading...")
-            time.sleep(1.0)
 
-        if not read is None:
-            try:
+            if not read is None:
+                readable, writable, exceptional = select.select([], [targetfd], [])
                 os.write(targetfd, read)
-            except Exception as e:
-                print("WARNING: write to targetfd (maybe nobody is reading the named-pipe yet?) exception: " + str(e) +" "+str(time.time()))
-                time.sleep(1.0)
-
+    except Exception as e:
+        type_, value_, traceback_ = sys.exc_info()
+        exstr = traceback.format_exception(type_, value_, traceback_)
+        print("ABORT: _read_fd_to_targetfd got exception:", exstr)
+    
     print("_read_fd_and_print: fd " + str(fd) + " exit proc")
     return
 
@@ -63,19 +84,22 @@ def _write_fd_from_srcfd(fd, srcfd):
 
     i = 0
 
-    while (True):
-        i += 1
+    try:
+        while (True):
+            i += 1
 
-        s = None
+            s = None
 
-        try:
+            readable, writable, exceptional = select.select([srcfd], [], [])
             s = os.read(srcfd, MAX_READ_SIZE)
-        except Exception as e:
-            print("WARNING: read from srcfd (maybe nobody is writing the named-pipe yet?) exception: " + str(e) +" "+str(time.time()))
-            time.sleep(1.0)
 
-        if not s is None:
-            os.write(fd, s)
+            if not s is None:
+                readable, writable, exceptional = select.select([], [fd], [])
+                os.write(fd, s)
+    except Exception as e:
+        type_, value_, traceback_ = sys.exc_info()
+        exstr = traceback.format_exception(type_, value_, traceback_)
+        print("ABORT: _write_fd_from_srcfd got exception:", exstr)
 
     print("_write_fd_from_srcfd: fd " + str(fd) + " exit proc")
     return
@@ -127,23 +151,48 @@ class Profile(dbus.service.Object):
 
         ###
 
+        # somehow all the other funcs like release or RequestDisconnection dont get - called - watch/cleanup ourselves...
+        print("Connected - watching reader and writer procs...")
         while (True):
-            #print("pre seleep")
+
+            if writer_proc.is_alive():
+                pass
+            else:
+                print("writer_proc ended - cleanup and exit now...")
+                break
+
+            if reader_proc.is_alive():
+                pass
+            else:
+                print("reader_proc ended - cleanup and exit now...")
+                break
+            
             time.sleep(1.0)
 
-        print("NewConnection - func exit")
-        return
+        reader_proc.terminate()
+        writer_proc.terminate()
+        
+        print("NewConnection - cleanup")
+        self.cleanup_fds()
+        print("NewConnection - exit")
+        exit(0)
 
     @dbus.service.method("org.bluez.Profile1",
                             in_signature="o", out_signature=""
     )
     def RequestDisconnection(self, path):
         print("RequestDisconnection(%s)" % (path))
+        Profile.cleanup_fds()
 
+    def cleanup_fds(self):
+        print("cleanup_fds() start")
         if (self.fd > 0):
+            print("cleanup_fds() close self.fd")
             os.close(self.fd)
             self.fd = -1
-
+        print("cleanup_fds() call cleanup() global vars")
+        cleanup() # cleanup global vars
+        print("cleanup_fds() done")
 
 if __name__ == '__main__':
 
