@@ -1,10 +1,18 @@
 #!/usr/bin/python
 
-# example server run command: python rfcomm.py -p "/my_serial_port" -n "Serial Port" -s -C 1 -u "0x1101"
+from __future__ import absolute_import, print_function, unicode_literals
+
+helpstr = """Use rfcomm.py (from the bluez-compassion project) to emulate *some* rfcomm functionality.
+    Examples:
+    - example server run command - read/write at stdout/stdin of this process:
+    python rfcomm.py -p "/my_serial_port" -n "Serial Port" -s -C 1 -u "0x1101"
+
+    - example server run command - read/write at '/dev/rfcomm0_rx' and '/dev/rfcomm0_tx' respectively:
+    python rfcomm.py -p "/my_serial_port" -n "Serial Port" -s -C 1 -u "0x1101" -N "/dev/rfcomm0"
+    """
 
 # This file is adapted from the original 'test-profile' file in BlueZ's (v5.45) 'test' folder.
 
-from __future__ import absolute_import, print_function, unicode_literals
 
 #from optparse import OptionParser, make_option
 import argparse
@@ -54,7 +62,7 @@ def cleanup():
     
 
 def _read_fd_to_targetfd(fd, targetfd):
-    print("_read_fd_and_print: fd " + str(fd))
+    #print("_read_fd_and_print: fd " + str(fd))
 
     i = 0
 
@@ -70,6 +78,9 @@ def _read_fd_to_targetfd(fd, targetfd):
             if not read is None:
                 readable, writable, exceptional = select.select([], [targetfd], [])
                 os.write(targetfd, read)
+            else:
+                print("rx: got None from read of remote fd - ABORT")
+                break
     except Exception as e:
         type_, value_, traceback_ = sys.exc_info()
         exstr = traceback.format_exception(type_, value_, traceback_)
@@ -80,7 +91,7 @@ def _read_fd_to_targetfd(fd, targetfd):
 
 
 def _write_fd_from_srcfd(fd, srcfd):
-    print("_write_fd_from_srcfd: fd " + str(fd))
+    #print("_write_fd_from_srcfd: fd " + str(fd))
 
     i = 0
 
@@ -96,6 +107,9 @@ def _write_fd_from_srcfd(fd, srcfd):
             if not s is None:
                 readable, writable, exceptional = select.select([], [fd], [])
                 os.write(fd, s)
+            else:
+                print("tx: got None from read of local fd - ABORT")
+                break
     except Exception as e:
         type_, value_, traceback_ = sys.exc_info()
         exstr = traceback.format_exception(type_, value_, traceback_)
@@ -152,7 +166,7 @@ class Profile(dbus.service.Object):
         ###
 
         # somehow all the other funcs like release or RequestDisconnection dont get - called - watch/cleanup ourselves...
-        print("Connected - watching reader and writer procs...")
+        print("== Connected")
         while (True):
 
             if writer_proc.is_alive():
@@ -169,12 +183,12 @@ class Profile(dbus.service.Object):
             
             time.sleep(1.0)
 
+        print("== Disconnected")
+        print("cleaning up...")
         reader_proc.terminate()
         writer_proc.terminate()
-        
-        print("NewConnection - cleanup")
         self.cleanup_fds()
-        print("NewConnection - exit")
+        print("cleaning up... done")
         exit(0)
 
     @dbus.service.method("org.bluez.Profile1",
@@ -203,7 +217,7 @@ if __name__ == '__main__':
     manager = dbus.Interface(bus.get_object("org.bluez",
                                             "/org/bluez"), "org.bluez.ProfileManager1")
 
-    parser = argparse.ArgumentParser(description="Just trying to emulate *some* rfcomm commands",
+    parser = argparse.ArgumentParser(description=helpstr,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter
                                      )
 
@@ -233,9 +247,9 @@ if __name__ == '__main__':
     parser.add_argument("-S", "--service",
                         dest="service",
                     default=None),
-    parser.add_argument("-N", "--create-named-pipe",
-                    help="""If not specified, stdout and stdin would be used (read/type directly in this run).
-                         Otherwise, we'll create a named pipe at the specified path and redirect read/writes there.""",
+    parser.add_argument("-N", "--create_rx_tx_named_pipes",
+                        help="""If not specified, stdout and stdin would be used (read/type directly in this process run).
+                         Otherwise, we'll create two named pipes: one for client reads named as specified with the suffix '_rx', another for client writes named as specified with the suffix '_rx'. Reads/writes shall be done there instead of stdout/stdin directly at this process.""",
                     dest="npp",
                     default=None),
 
@@ -258,6 +272,9 @@ if __name__ == '__main__':
 
     if (args['role']):
         opts["Role"] = args['role']
+    else:
+        print("Invalid usage - no role specified - please see usage examples below:\n"+helpstr)
+        exit(1)
 
     if (args['psm'] is not None):
         opts["PSM"] = dbus.UInt16(int(args['psm']))
@@ -279,21 +296,27 @@ if __name__ == '__main__':
         print("g_named_pipe_to_create_path: "+str(g_named_pipe_to_create_path))
         try:
             print("remove any existing file at: " + str(g_named_pipe_to_create_path))
-            os.remove(g_named_pipe_to_create_path)
+            os.remove(g_named_pipe_to_create_path+"_rx")
+            os.remove(g_named_pipe_to_create_path+"_tx")
         except:
             pass
 
-        print("creating the named-pipe...")
-        os.mkfifo(g_named_pipe_to_create_path)
+        print("creating the named-pipes... _rx and _tx")
+        client_rxfp = g_named_pipe_to_create_path+"_rx"
+        client_txfp = g_named_pipe_to_create_path+"_tx"
+        os.mkfifo(client_rxfp, 0666)
+        os.mkfifo(client_txfp, 0666)
+        # os.chmod() is somehow required on my system otherwise the rights are not 0666 yet
+        os.chmod(client_rxfp, 0666) 
+        os.chmod(client_txfp, 0666)
+        print("Opening fd for client writes at: "+client_txfp)
+        print('TIP: after connected, try send (in another terminal) using: echo "hello from server" > '+client_rxfp)
+        g_srcfd = os.open(client_txfp, os.O_RDONLY|os.O_NONBLOCK)
+        print("Waiting for reader process to open/read: "+client_rxfp)
+        print("TIP: before connection (now - in another terminal) try: cat "+client_rxfp)
+        g_targetfd = os.open(client_rxfp, os.O_WRONLY)
 
-        print("opening the created named-pipe at: " + str(g_named_pipe_to_create_path))
-        print("opening read fd")
-        g_srcfd = os.open(g_named_pipe_to_create_path, os.O_RDONLY|os.O_NONBLOCK)
-        print("opening write fd")
-        g_targetfd = os.open(g_named_pipe_to_create_path, os.O_WRONLY|os.O_NONBLOCK)
-        print("open named-pipe success")
-
-        print("create named-pipe success")
+        print("open named-pipes success")
     else:
         g_named_pipe_to_create_path = None
         print("Using stdin/stdout for read/writes...")
@@ -302,6 +325,6 @@ if __name__ == '__main__':
 
     print("rfcomm.py calling RegisterProfile")
     manager.RegisterProfile(args['path'], args['uuid'], opts)
-    print("rfcomm.py calling RegisterProfile - done - waiting for incoming connections...")
+    print("== Waiting for bluetooth connection")
 
     mainloop.run()
