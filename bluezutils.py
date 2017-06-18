@@ -1,5 +1,6 @@
 import dbus
 import subprocess
+import os
 
 # modified iteritems to items() for python3 - from bluez-5.7/test/bluezutils.py
 
@@ -8,6 +9,20 @@ ADAPTER_INTERFACE = SERVICE_NAME + ".Adapter1"
 DEVICE_INTERFACE = SERVICE_NAME + ".Device1"
 MIN_BLUEZ_VER = 5.44
 
+# touch a file named 'debug' to activate debug dprint()
+debug = os.path.isfile(
+    os.path.join(
+        os.path.realpath(
+            os.path.join(os.getcwd(), os.path.dirname(__file__))
+        ),
+        "debug"
+    )
+)
+
+print("dprint() debug mode: ",debug)
+def dprint(s):
+        if debug:
+                print(s)
 
 def raise_ex_if_bluez_ver_too_old():
 	is_bluez_ver_compatiable(do_raise=True)
