@@ -78,7 +78,8 @@ NOTE: Since pipes in linux are only 'one-way' direction so we have to use two pi
 Use the -N parameter to created 'named pipes' for reads at <the -N option param>_rx and writes at <the -N option param>_tx.
 
 Example command to run a bluetooth serial port for reads/writes at '/dev/rfcomm0_rx' and '/dev/rfcomm0_tx' respectively:
-<pre>python rfcomm.py -p "/my_serial_port" -n "Serial Port" -s -C 1 -u "0x1101" -N "/dev/rfcomm0"</pre>
+<pre>sudo python rfcomm.py -p "/my_serial_port" -n "Serial Port" -s -C 1 -u "0x1101" -N "/dev/rfcomm0"</pre>
+('sudo' might be required to access the "/dev" path, not required for other paths you can access.)
 
 The above command would wait for a 'pipe reader process' to start first (required for opening a named pipe from this side) so do below in another terminal:
 <pre>cat /dev/rfcomm0_rx</pre>
