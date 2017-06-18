@@ -62,7 +62,7 @@ def cleanup():
     
 
 def _read_fd_to_targetfd(fd, targetfd):
-    print("_read_fd_and_print: fd " + str(fd))
+    #print("_read_fd_and_print: fd " + str(fd))
 
     i = 0
 
@@ -78,6 +78,9 @@ def _read_fd_to_targetfd(fd, targetfd):
             if not read is None:
                 readable, writable, exceptional = select.select([], [targetfd], [])
                 os.write(targetfd, read)
+            else:
+                print("rx: got None from read of remote fd - ABORT")
+                break
     except Exception as e:
         type_, value_, traceback_ = sys.exc_info()
         exstr = traceback.format_exception(type_, value_, traceback_)
@@ -88,7 +91,7 @@ def _read_fd_to_targetfd(fd, targetfd):
 
 
 def _write_fd_from_srcfd(fd, srcfd):
-    print("_write_fd_from_srcfd: fd " + str(fd))
+    #print("_write_fd_from_srcfd: fd " + str(fd))
 
     i = 0
 
@@ -104,6 +107,9 @@ def _write_fd_from_srcfd(fd, srcfd):
             if not s is None:
                 readable, writable, exceptional = select.select([], [fd], [])
                 os.write(fd, s)
+            else:
+                print("tx: got None from read of local fd - ABORT")
+                break
     except Exception as e:
         type_, value_, traceback_ = sys.exc_info()
         exstr = traceback.format_exception(type_, value_, traceback_)
@@ -160,7 +166,7 @@ class Profile(dbus.service.Object):
         ###
 
         # somehow all the other funcs like release or RequestDisconnection dont get - called - watch/cleanup ourselves...
-        print("Connected - watching reader and writer procs...")
+        print("== Connected")
         while (True):
 
             if writer_proc.is_alive():
@@ -177,12 +183,12 @@ class Profile(dbus.service.Object):
             
             time.sleep(1.0)
 
+        print("== Disconnected")
+        print("cleaning up...")
         reader_proc.terminate()
         writer_proc.terminate()
-        
-        print("NewConnection - cleanup")
         self.cleanup_fds()
-        print("NewConnection - exit")
+        print("cleaning up... done")
         exit(0)
 
     @dbus.service.method("org.bluez.Profile1",
@@ -298,13 +304,17 @@ if __name__ == '__main__':
         print("creating the named-pipes... _rx and _tx")
         client_rxfp = g_named_pipe_to_create_path+"_rx"
         client_txfp = g_named_pipe_to_create_path+"_tx"
-        os.mkfifo(client_rxfp)
-        os.mkfifo(client_txfp)
-
-        print("opening fd for client writes at: "+client_txfp)
+        os.mkfifo(client_rxfp, 0666)
+        os.mkfifo(client_txfp, 0666)
+        # os.chmod() is somehow required on my system otherwise the rights are not 0666 yet
+        os.chmod(client_rxfp, 0666) 
+        os.chmod(client_txfp, 0666)
+        print("Opening fd for client writes at: "+client_txfp)
+        print('TIP: after connected, try send (in another terminal) using: echo "hello from server" > '+client_rxfp)
         g_srcfd = os.open(client_txfp, os.O_RDONLY|os.O_NONBLOCK)
-        print("opening fd for client reads at: "+client_rxfp)
-        g_targetfd = os.open(client_rxfp, os.O_WRONLY|os.O_NONBLOCK)
+        print("Waiting for reader process to open/read: "+client_rxfp)
+        print("TIP: before connection (now - in another terminal) try: cat "+client_rxfp)
+        g_targetfd = os.open(client_rxfp, os.O_WRONLY)
 
         print("open named-pipes success")
     else:
@@ -315,6 +325,6 @@ if __name__ == '__main__':
 
     print("rfcomm.py calling RegisterProfile")
     manager.RegisterProfile(args['path'], args['uuid'], opts)
-    print("rfcomm.py calling RegisterProfile - done - waiting for incoming connections...")
+    print("== Waiting for bluetooth connection")
 
     mainloop.run()

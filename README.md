@@ -66,14 +66,35 @@ cd bluez-compassion
 
 Then you can type and press enter here to get it sent/shown on the remote device, type/send from the remote device to get it shown here! Congratulatons! You can now implement the above in your own scripts then redirect this stage's stdin/stdout to/from your script/program.
 
-NOTE: very early stage - can now read/write with stdin/stdout only... but it is already working with remote Android device connecting via the 'Bluetooth Terminal' app. Also the write from the stdin would have apx 1 sec delay as it's 'sleeping' if it failed to find data from stdin previously.
+You can either diconnect using 'Control-C' in this terminal or disconnect from the remote device (like press back in the Bluetooth terminal app on Android) - auto cleanup would take place here and this program would exit.
 
-NOTE: Do not use the '-N' named-pipe mode yet (for example to read/write to from /dev/rfcomm0 instead of stdin/stdout - it has lots of issues mentioned in a git commit msg - it is recommended to use the above example instead).
+---
+
+Redirecting read/writes to rx/tx pipes instead of stdout/stdin
+--------------------------------------------------------------
+
+NOTE: Since pipes in linux are only 'one-way' direction so we have to use two pipes, one for tx, one for rx, unlike the legacy 'character device where you can both read/write with /dev/rfcomm0'.
+
+Use the -N parameter to created 'named pipes' for reads at <the -N option param>_rx and writes at <the -N option param>_tx.
+
+Example command to run a bluetooth serial port for reads/writes at '/dev/rfcomm0_rx' and '/dev/rfcomm0_tx' respectively:
+<pre>python rfcomm.py -p "/my_serial_port" -n "Serial Port" -s -C 1 -u "0x1101" -N "/dev/rfcomm0"</pre>
+
+The above command would wait for a 'pipe reader process' to start first (required for opening a named pipe from this side) so do below in another terminal:
+<pre>cat /dev/rfcomm0_rx</pre>
+
+Then connect from your Bluetooth device (or Android app as in the stdin/stdout first example further above). Whatever you write from the remote device would appear in the 'cat' terminal.
+
+If you want to send anything to the connected remote device, just write to /dev/rfcomm0_tx - for example:
+<pre>echo "hello from server" > /dev/rfcomm0_tx</pre>
 
 ---
 
 Other notable commands
 ----------------------
+
+- Try power off the Bluetooth adapter:
+<pre>./hciconfig -a hci0 down</pre>
 
 - Set device class:
 
@@ -81,8 +102,6 @@ Note: This is using deprecated btmgmt which needs root, and doesn't get built in
 
 <pre>sudo ./hciconfig -a hci0 class 0x000100</pre>
 
-- Try power off the Bluetooth adapter:
-<pre>./hciconfig -a hci0 down</pre>
 
 ---
 
