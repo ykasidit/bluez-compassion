@@ -95,6 +95,23 @@ def _write_fd_from_srcfd(fd, srcfd):
 
     i = 0
 
+    # if read from pipe mode
+    if srcfd != sys.stdin.fileno():
+        # try clear old pipe contents
+        print("trashing old pipe contents...")
+        for i in range(0, 100):
+            s = None
+            try:
+                s = os.read(srcfd, MAX_READ_SIZE)
+            except:
+                pass
+            print("trashing round i: {} - contents: {}".format(i, s))
+            if s == None:
+                print("trashing old pipe contents... break at i:",i)
+                break
+        print("trashing old pipe contents... done")
+        
+
     try:
         while (True):
             i += 1
