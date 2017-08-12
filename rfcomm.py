@@ -151,11 +151,13 @@ class Profile(dbus.service.Object):
                 print("  %s = %s" % (key, properties[key]))
                 self.fd = fd.take()
 
-        print("pre reader_proc cre")
-        reader_proc = mp.Process(target=_read_fd_to_targetfd, args=(self.fd, g_targetfd,))
-        print("pre reader_proc start")
-        reader_proc.start()
-        print("reader_proc started")
+        reader_proc = None
+        if not g_targetfd is None:
+            print("pre reader_proc cre")
+            reader_proc = mp.Process(target=_read_fd_to_targetfd, args=(self.fd, g_targetfd,))
+            print("pre reader_proc start")
+            reader_proc.start()
+            print("reader_proc started")
 
         print("pre writer_proc cre")
         writer_proc = mp.Process(target=_write_fd_from_srcfd, args=(self.fd, g_srcfd,))
@@ -175,7 +177,9 @@ class Profile(dbus.service.Object):
                 print("writer_proc ended - cleanup and exit now...")
                 break
 
-            if reader_proc.is_alive():
+            if reader_proc is None:
+                pass
+            elif reader_proc.is_alive():
                 pass
             else:
                 print("reader_proc ended - cleanup and exit now...")
@@ -185,7 +189,10 @@ class Profile(dbus.service.Object):
 
         print("== Disconnected")
         print("cleaning up...")
-        reader_proc.terminate()
+        if reader_proc is None:
+            pass
+        else:
+            reader_proc.terminate()
         writer_proc.terminate()
         self.cleanup_fds()
         print("cleaning up... done")
@@ -253,6 +260,12 @@ if __name__ == '__main__':
                     dest="npp",
                     default=None),
 
+    parser.add_argument("-W", "--write_only",
+                        help="""Designed for rx tx named pipes mode - disable rx pipe.""",
+                        dest="write_only",
+                        action="store_true",
+                        default=False)
+
     parser.add_argument('cmd_args',
                         nargs='*'
                         )
@@ -310,11 +323,15 @@ if __name__ == '__main__':
         os.chmod(client_rxfp, 0666) 
         os.chmod(client_txfp, 0666)
         print("Opening fd for client writes at: "+client_txfp)
-        print('TIP: after connected, try send (in another terminal) using: echo "hello from server" > '+client_rxfp)
+        print('TIP: after connected, try send (in another terminal) using: echo "hello from server" > '+client_txfp)
         g_srcfd = os.open(client_txfp, os.O_RDONLY|os.O_NONBLOCK)
-        print("Waiting for reader process to open/read: "+client_rxfp)
-        print("TIP: before connection (now - in another terminal) try: cat "+client_rxfp)
-        g_targetfd = os.open(client_rxfp, os.O_WRONLY)
+        print("args['write_only']:", args['write_only'])
+        if args['write_only'] is False:
+            print("Waiting for reader process to open/read: "+client_rxfp)
+            print("TIP: before connection (now - in another terminal) try: cat "+client_rxfp)
+            g_targetfd = os.open(client_rxfp, os.O_WRONLY)
+        else:
+            g_targetfd = None # write_only mode
 
         print("open named-pipes success")
     else:
