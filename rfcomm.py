@@ -48,8 +48,8 @@ def cleanup():
 
     # if its stdin/stdout - dont close them
 
-    if not g_srcfd is None and g_srcfd != sys.stdin.fileno():
-        print("cleanup() g_srcfd")
+    if not g_srcfd is None and g_srcfd != 0:
+        print("cleanup() g_srcfd - not stdin")
         os.close(g_srcfd)
         g_srcfd = None
 
@@ -76,8 +76,9 @@ def _read_fd_to_targetfd(fd, targetfd):
             read = os.read(fd, MAX_READ_SIZE)
 
             if not read is None:
-                readable, writable, exceptional = select.select([], [targetfd], [])
-                os.write(targetfd, read)
+                if not targetfd is None:
+                    readable, writable, exceptional = select.select([], [targetfd], [])
+                    os.write(targetfd, read)
             else:
                 print("rx: got None from read of remote fd - ABORT")
                 break
@@ -96,7 +97,8 @@ def _write_fd_from_srcfd(fd, srcfd):
     i = 0
 
     # if read from pipe mode
-    if srcfd != sys.stdin.fileno():
+    
+    if srcfd != 0:
         # try clear old pipe contents
         print("trashing old pipe contents...")
         for i in range(0, 100):
@@ -137,7 +139,8 @@ def _write_fd_from_srcfd(fd, srcfd):
 
 
 class Profile(dbus.service.Object):
-    fd = -1
+    #fd = -1
+    fds = []
 
     @dbus.service.method("org.bluez.Profile1",
                          in_signature="", out_signature="")
@@ -157,32 +160,40 @@ class Profile(dbus.service.Object):
         global g_srcfd
         global g_targetfd
 
-        self.fd = fd.take()
-        print("NewConnection(%s, %d)" % (path, self.fd))
+        print("NewConnection({}, fd: {})".format(path, fd))
+
+        this_fd = fd.take()
+        self.fds.append(this_fd)        
         print("type fd", type(fd))
-        print("self.fd", str(self.fd))
-        for key in properties.keys():
-            if key == "Version" or key == "Features":
-                print("  %s = 0x%04x" % (key, properties[key]))
-            else:
-                print("  %s = %s" % (key, properties[key]))
-                self.fd = fd.take()
+        print("this_fd", str(this_fd))
+
+        try:
+            for key in properties.keys():
+                print("property: key:",key, "value:", properties[key])
+                if key == "Version" or key == "Features":
+                    print("  %s = 0x%04x" % (key, properties[key]))
+                else:
+                    print("  %s = %s" % (key, properties[key]))
+        except Exception as e:
+            print("WARNING: read new connection property exception: ", str(e))
 
         reader_proc = None
-        if not g_targetfd is None:
-            print("pre reader_proc cre")
-            reader_proc = mp.Process(target=_read_fd_to_targetfd, args=(self.fd, g_targetfd,))
-            print("pre reader_proc start")
-            reader_proc.start()
-            print("reader_proc started")
+        print("pre reader_proc cre")
+        reader_proc = mp.Process(target=_read_fd_to_targetfd, args=(this_fd, g_targetfd,))
+        print("pre reader_proc start")
+        reader_proc.start()
+        print("reader_proc started")
 
-        print("pre writer_proc cre")
-        writer_proc = mp.Process(target=_write_fd_from_srcfd, args=(self.fd, g_srcfd,))
+        print("pre writer_proc cre: g_srcfd:", g_srcfd)
+        writer_proc = mp.Process(target=_write_fd_from_srcfd, args=(this_fd, g_srcfd,))
         print("pre writer_proc start")
         writer_proc.start()
         print("writer_proc started")
 
-        ###
+        
+        """
+###
+
 
         # somehow all the other funcs like release or RequestDisconnection dont get - called - watch/cleanup ourselves...
         print("== Connected")
@@ -214,6 +225,7 @@ class Profile(dbus.service.Object):
         self.cleanup_fds()
         print("cleaning up... done")
         exit(0)
+        """
 
     @dbus.service.method("org.bluez.Profile1",
                             in_signature="o", out_signature=""
@@ -224,10 +236,16 @@ class Profile(dbus.service.Object):
 
     def cleanup_fds(self):
         print("cleanup_fds() start")
-        if (self.fd > 0):
-            print("cleanup_fds() close self.fd")
-            os.close(self.fd)
-            self.fd = -1
+        for i in range(0, len(fds)):
+            try:
+                fd = fds[i]            
+                if fd > 0:
+                    print("cleanup_fds() close fd: ", fd)
+                    os.close(fd)
+                del fds[i]
+            except Exception as e:
+                print("WARNING: cleanup fd i {} exception: {}".format(i, str(e)))
+            
         print("cleanup_fds() call cleanup() global vars")
         cleanup() # cleanup global vars
         print("cleanup_fds() done")
@@ -356,6 +374,7 @@ if __name__ == '__main__':
         print("Using stdin/stdout for read/writes...")
         g_targetfd = sys.stdout.fileno()
         g_srcfd = sys.stdin.fileno()
+
 
     print("rfcomm.py calling RegisterProfile")
     manager.RegisterProfile(args['path'], args['uuid'], opts)
