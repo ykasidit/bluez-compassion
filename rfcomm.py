@@ -36,32 +36,33 @@ except ImportError:
 
 
 g_named_pipe_to_create_path = None
-g_srcfd = None
-g_targetfd = None
+
+g_local_tx_pipe_to_read = None
+g_local_rx_pipe_to_write = None
 MAX_READ_SIZE = 2048
 
 def cleanup():
-    global g_srcfd
-    global g_targetfd
+    global g_local_tx_pipe_to_read
+    global g_local_rx_pipe_to_write
 
     print("cleanup() start")
 
     # if its stdin/stdout - dont close them
 
-    if not g_srcfd is None and g_srcfd != 0:
-        print("cleanup() g_srcfd - not stdin")
-        os.close(g_srcfd)
-        g_srcfd = None
+    if not g_local_tx_pipe_to_read is None and g_local_tx_pipe_to_read != 0:
+        print("cleanup() g_local_tx_pipe_to_read - not stdin")
+        os.close(g_local_tx_pipe_to_read)
+        g_local_tx_pipe_to_read = None
 
-    if not g_targetfd is None and g_targetfd != sys.stdout.fileno():
-        print("cleanup() g_targetfd")
-        os.close(g_targetfd)
-        g_targetfd = None
+    if not g_local_rx_pipe_to_write is None and g_local_rx_pipe_to_write != sys.stdout.fileno():
+        print("cleanup() g_local_rx_pipe_to_write")
+        os.close(g_local_rx_pipe_to_write)
+        g_local_rx_pipe_to_write = None
         
     print("cleanup() done")
     
 
-def _read_fd_to_targetfd(fd, targetfd):
+def _read_fd_to_local_rx_pipe_to_write(fd, local_rx_pipe_to_write):
     #print("_read_fd_and_print: fd " + str(fd))
 
     i = 0
@@ -76,35 +77,35 @@ def _read_fd_to_targetfd(fd, targetfd):
             read = os.read(fd, MAX_READ_SIZE)
 
             if not read is None:
-                if not targetfd is None:
-                    readable, writable, exceptional = select.select([], [targetfd], [])
-                    os.write(targetfd, read)
+                if not local_rx_pipe_to_write is None:
+                    readable, writable, exceptional = select.select([], [local_rx_pipe_to_write], [])
+                    os.write(local_rx_pipe_to_write, read)
             else:
                 print("rx: got None from read of remote fd - ABORT")
                 break
     except Exception as e:
         type_, value_, traceback_ = sys.exc_info()
         exstr = traceback.format_exception(type_, value_, traceback_)
-        print("ABORT: _read_fd_to_targetfd got exception:", exstr)
+        print("ABORT: _read_fd_to_local_rx_pipe_to_write got exception:", exstr)
     
     print("_read_fd_and_print: fd " + str(fd) + " exit proc")
     return
 
 
-def _write_fd_from_srcfd(fd, srcfd):
-    #print("_write_fd_from_srcfd: fd " + str(fd))
+def _write_fd_from_local_tx_pipe_to_read(fd, local_tx_pipe_to_read):
+    #print("_write_fd_from_local_tx_pipe_to_read: fd " + str(fd))
 
     i = 0
 
     # if read from pipe mode
     
-    if srcfd != 0:
+    if local_tx_pipe_to_read != 0:
         # try clear old pipe contents
         print("trashing old pipe contents...")
         for i in range(0, 100):
             s = None
             try:
-                s = os.read(srcfd, MAX_READ_SIZE)
+                s = os.read(local_tx_pipe_to_read, MAX_READ_SIZE)
             except:
                 pass
             print("trashing round i: {} - contents: {}".format(i, s))
@@ -120,8 +121,8 @@ def _write_fd_from_srcfd(fd, srcfd):
 
             s = None
 
-            readable, writable, exceptional = select.select([srcfd], [], [])
-            s = os.read(srcfd, MAX_READ_SIZE)
+            readable, writable, exceptional = select.select([local_tx_pipe_to_read], [], [])
+            s = os.read(local_tx_pipe_to_read, MAX_READ_SIZE)
 
             if not s is None:
                 readable, writable, exceptional = select.select([], [fd], [])
@@ -132,9 +133,9 @@ def _write_fd_from_srcfd(fd, srcfd):
     except Exception as e:
         type_, value_, traceback_ = sys.exc_info()
         exstr = traceback.format_exception(type_, value_, traceback_)
-        print("ABORT: _write_fd_from_srcfd got exception:", exstr)
+        print("ABORT: _write_fd_from_local_tx_pipe_to_read got exception:", exstr)
 
-    print("_write_fd_from_srcfd: fd " + str(fd) + " exit proc")
+    print("_write_fd_from_local_tx_pipe_to_read: fd " + str(fd) + " exit proc")
     return
 
 
@@ -157,8 +158,8 @@ class Profile(dbus.service.Object):
                          in_signature="oha{sv}", out_signature="")
     def NewConnection(self, path, fd, properties):
 
-        global g_srcfd
-        global g_targetfd
+        global g_local_tx_pipe_to_read
+        global g_local_rx_pipe_to_write
 
         print("NewConnection({}, fd: {})".format(path, fd))
 
@@ -179,13 +180,13 @@ class Profile(dbus.service.Object):
 
         reader_proc = None
         print("pre reader_proc cre")
-        reader_proc = mp.Process(target=_read_fd_to_targetfd, args=(this_fd, g_targetfd,))
+        reader_proc = mp.Process(target=_read_fd_to_local_rx_pipe_to_write, args=(this_fd, g_local_rx_pipe_to_write,))
         print("pre reader_proc start")
         reader_proc.start()
         print("reader_proc started")
 
-        print("pre writer_proc cre: g_srcfd:", g_srcfd)
-        writer_proc = mp.Process(target=_write_fd_from_srcfd, args=(this_fd, g_srcfd,))
+        print("pre writer_proc cre: g_local_tx_pipe_to_read:", g_local_tx_pipe_to_read)
+        writer_proc = mp.Process(target=_write_fd_from_local_tx_pipe_to_read, args=(this_fd, g_local_tx_pipe_to_read,))
         print("pre writer_proc start")
         writer_proc.start()
         print("writer_proc started")
@@ -350,30 +351,32 @@ if __name__ == '__main__':
             pass
 
         print("creating the named-pipes... _rx and _tx")
-        client_rxfp = g_named_pipe_to_create_path+"_rx"
-        client_txfp = g_named_pipe_to_create_path+"_tx"
-        os.mkfifo(client_rxfp, 0666)
-        os.mkfifo(client_txfp, 0666)
-        # os.chmod() is somehow required on my system otherwise the rights are not 0666 yet
-        os.chmod(client_rxfp, 0666) 
-        os.chmod(client_txfp, 0666)
-        print("Opening fd for client writes at: "+client_txfp)
-        print('TIP: after connected, try send (in another terminal) using: echo "hello from server" > '+client_txfp)
-        g_srcfd = os.open(client_txfp, os.O_RDONLY|os.O_NONBLOCK)
-        print("args['write_only']:", args['write_only'])
-        if args['write_only'] is False:
-            print("Waiting for reader process to open/read: "+client_rxfp)
-            print("TIP: before connection (now - in another terminal) try: cat "+client_rxfp)
-            g_targetfd = os.open(client_rxfp, os.O_WRONLY)
-        else:
-            g_targetfd = None # write_only mode
+        # support up to max 7 connections (as per bt spec)
+        for i in range(7):
+            client_rxfp = g_named_pipe_to_create_path+"_rx"
+            client_txfp = g_named_pipe_to_create_path+"_tx"
+            os.mkfifo(client_rxfp, 0666)
+            os.mkfifo(client_txfp, 0666)
+            # os.chmod() is somehow required on my system otherwise the rights are not 0666 yet
+            os.chmod(client_rxfp, 0666) 
+            os.chmod(client_txfp, 0666)
+            print("Opening fd for client writes at: "+client_txfp)
+            print('TIP: after connected, try send (in another terminal) using: echo "hello from server" > '+client_txfp)
+            g_local_tx_pipe_to_read = os.open(client_txfp, os.O_RDONLY|os.O_NONBLOCK)
+            print("args['write_only']:", args['write_only'])
+            if args['write_only'] is False:
+                print("Waiting for reader process to open/read: "+client_rxfp)
+                print("TIP: before connection (now - in another terminal) try: cat "+client_rxfp)
+                g_local_rx_pipe_to_write = os.open(client_rxfp, os.O_WRONLY)
+            else:
+                g_local_rx_pipe_to_write = None # write_only mode
 
         print("open named-pipes success")
     else:
         g_named_pipe_to_create_path = None
-        print("Using stdin/stdout for read/writes...")
-        g_targetfd = sys.stdout.fileno()
-        g_srcfd = sys.stdin.fileno()
+        print("Using stdin as local_tx_pipe_to_read and stdout for read/writes...")
+        g_local_rx_pipe_to_write = sys.stdout.fileno()
+        g_local_tx_pipe_to_read = sys.stdin.fileno()
 
 
     print("rfcomm.py calling RegisterProfile")

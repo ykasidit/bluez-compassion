@@ -1,7 +1,7 @@
 * if more than 1 connected then warn about competing for stdin
 
 * specify pipe naming for multiple connections like:
-   param: /dev/rfcomm shall be
+   param: /dev/rfcomm shall be /dev/rfcomm
 
 * re-implement set device class through python-dbus?
 
