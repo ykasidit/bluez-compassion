@@ -103,6 +103,69 @@ Note: This is using deprecated btmgmt which needs root, and doesn't get built in
 
 <pre>sudo ./hciconfig -a hci0 class 0x000100</pre>
 
+---
+
+Lower level MGMT API tool: bzc_mgmt
+-----------------------------------
+
+Build (use command 'make' in this folder - requires bluetooth headers installed) and use bzc_mgmt to call simple bluez "mgmt" API as described in bluez-src-folder/doc/mgmt-api.txt' - and the program would return/exit with the 'error code' of the response - so it's easy for other programs to call it to do a mgmt command and determine success/failure from the exit code.
+
+For example, this valid command to get the details of the first controller:
+<pre>./bzc_mgmt '04 00 00 00 00 00'</pre>
+
+If successful, would produce something like below output:
+(containing the bluetooth controller/dongle's bluetooth device address - try run "./bzc_mgmt -h" to see example manual parse of the results)
+<pre>
+bzc_mgmt: this is a caller for bluez-mgmt api
+command_hex string: 04 00 00 00 00 00
+command_hex converted len: 6
+command_hex converted contents: 04 00 00 00 00 00 
+mgmt_create ret 3
+write bin_buf wret 6
+read response: 01 00 00 00 1B 01 04 00 00 49 06 69 71 A4 E4 08 02 00 FF FF 00 00 DA 0A 00 00 00 00 00 6B 61 73 69 64 69 74 2D 74 68 69 6E 6B 70 61 64 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+read response ended - break
+last event_pkt code: 0x0001
+last event_pkt controller_id: 0x0000
+last event_pkt parm_len: 0x011B
+last resp_hedaer req_code: 0x0004
+last resp_hedaer error_code: 0x0000
+set parsed error_code as ret code 0
+</pre>
+
+And the program exits with ret code 0:
+<pre>
+echo $?
+0
+</pre>
+
+But for an invalid failed command (below we set an invalid controller_id 0x00FF) as:
+<pre>
+./bzc_mgmt '04 00 FF 00 00 00'
+</pre>
+Would produce:
+<pre>
+./bzc_mgmt '04 00 FF 00 00 00'
+bzc_mgmt: this is a caller for bluez-mgmt api
+command_hex string: 04 00 FF 00 00 00
+command_hex converted len: 6
+command_hex converted contents: 04 00 FF 00 00 00 
+mgmt_create ret 3
+write bin_buf wret 0
+read response: 02 00 FF 00 03 00 04 00 11 
+read response ended - break
+last event_pkt code: 0x0002
+last event_pkt controller_id: 0x00FF
+last event_pkt parm_len: 0x0003
+last resp_hedaer req_code: 0x0004
+last resp_hedaer error_code: 0x0011
+set parsed error_code as ret code 17
+</pre>
+
+And program exit code:
+<pre>
+echo $?
+17
+</pre>
 
 ---
 
