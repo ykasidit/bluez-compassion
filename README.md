@@ -108,7 +108,7 @@ Note: This is using deprecated btmgmt which needs root, and doesn't get built in
 Lower level MGMT API tool: bzc_mgmt
 -----------------------------------
 
-Build (use command 'make' in this folder - requires bluetooth headers installed) and use bzc_mgmt to do some simple bluez "mgmt" API calls as described in bluez-src-folder/doc/mgmt-api.txt' - and the program would return/exit with the 'error code' of the response - so it's easy for other programs to call it to do a mgmt command and determine success/failure from the exit code.
+Build (use command 'make' in this folder - requires bluetooth headers installed) and use bzc_mgmt to do some simple bluez "mgmt" API calls as described in [BlueZ's source: doc/mgmt-api.txt](https://git.kernel.org/pub/scm/bluetooth/bluez.git/tree/doc/mgmt-api.txt?h=5.46) - and the program would return/exit with the 'error code' of the response - so it's easy for other programs to call it to do a mgmt command and determine success/failure from the exit code.
 
 For example, this valid command to get the details of the first controller:
 <pre>./bzc_mgmt '04 00 00 00 00 00'</pre>
