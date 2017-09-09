@@ -9,7 +9,7 @@ However, the goal is *not* to exactly emulate all options or all of the deprecat
 
 Credit to the [BlueZ](http://www.bluez.org) project for providing many useful 'test' code/examples in the 'test' folder of their source distribution. Most of the code here is based on source in that folder.
 
-**NOTE:**
+**NOTES:**
   - **Requires BlueZ 5.44 or newer - tested on BlueZ 5.46 built from source package.**
   - This is a very early stage of development and we're just trying to implement *some* commands we used in the past (and maybe some additional commands too). If you need more commands, please see tools 'bluetoothctl' or please help code more features you need/use - for example, you might open hciconfig.py and add your new command into the g_commands_dict dict and add a function named do_<your_command> then access the command args from 'cmd_args' as shown in the example/existing functions.
 
