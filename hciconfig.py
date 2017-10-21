@@ -21,6 +21,8 @@ g_commands_dict = {
 
     'class':"Set device class. Example: sudo ./hciconfig -a hci0 class 0x000100", # no dbus api and I'm too lazy to implement mgmt-api - just call the 'btmgmt class'.
 
+    'get_name':"Get device name",
+    'name':"Set device name"
 }
 
 
@@ -104,7 +106,18 @@ def do_down(adapter, cmd_args):
 def do_up(adapter, cmd_args):
     print('starting function:', inspect.stack()[0][3])
     set_property(adapter, 'Powered', True)
-    print("done powered true")    
+    print("done powered true")
+
+    
+def do_get_name(adapter, cmd_args):
+    print('starting function:', inspect.stack()[0][3])
+    print("current dev name: ",get_property(adapter, 'Alias'))
+
+    
+def do_name(adapter, cmd_args):
+    print('starting function:', inspect.stack()[0][3])
+    set_property(adapter, 'Alias', cmd_args[1])
+    print("done set name")
             
 
 def parse_cmd_args():
