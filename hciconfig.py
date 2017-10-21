@@ -116,7 +116,10 @@ def do_get_name(adapter, cmd_args):
     
 def do_name(adapter, cmd_args):
     print('starting function:', inspect.stack()[0][3])
-    set_property(adapter, 'Alias', cmd_args[1])
+    # spaces in name might have got split
+    name = " ".join(cmd_args[1:])
+    print("start set name:", name)
+    set_property(adapter, 'Alias', name)
     print("done set name")
             
 
