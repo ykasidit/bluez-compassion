@@ -1,6 +1,7 @@
 import dbus
 import subprocess
 import os
+import re
 
 # modified iteritems to items() for python3 - from bluez-5.7/test/bluezutils.py
 
@@ -40,7 +41,7 @@ def is_bluez_ver_compatiable(do_raise=False):
 
 
 def get_bluez_ver_str():
-	return subprocess.check_output("bluetoothctl -v", shell=True).strip()
+	return re.findall("\d+\.\d+", subprocess.check_output("bluetoothctl -v", shell=True).strip())[0]
 
 
 def get_managed_objects():
