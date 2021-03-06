@@ -8,24 +8,33 @@
 
 #include "bzc_mgmt.h"
 
-/* use this to call bluez "mgmt" API as described in bluez-src-folder/doc/mgmt-api.txt */
+/* use this to call bluez "mgmt" API as described in bluez-src-folder/doc/mgmt-api.txt or HCI commands depending on channel specified */
 
-int mgmt_create(void)
+int sock_create(int bluez_hci_channel)
 {
 	struct sockaddr_hci addr;
 	int fd;
 
 	fd = socket(PF_BLUETOOTH, SOCK_RAW | SOCK_CLOEXEC | SOCK_NONBLOCK,
                                                                 BTPROTO_HCI);
-	if (fd < 0)
+	if (fd < 0) {
+		printf("sock_create: socket() failed ret: %d\n", fd);
 		return -errno;
+	}
 
 	memset(&addr, 0, sizeof(addr));
 	addr.hci_family = AF_BLUETOOTH;
 	addr.hci_dev = HCI_DEV_NONE;
-	addr.hci_channel = HCI_CHANNEL_CONTROL;
+	addr.hci_channel = bluez_hci_channel;
 
 	if (bind(fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+
+		if (fd < 0) {
+			printf("sock_create: bind() failed errno: %d\n", errno);
+			return -errno;
+		}
+
+			
 		int err = -errno;
 		close(fd);
 		return err;
@@ -102,9 +111,19 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	printf("command_hex string: %s\n", argv[1]);
+	char* input_str = argv[1];
+	int hci_mode = 0;
+	const char* HCI_FLAG_PREFIX = "hci ";
+	if (strstr(input_str, HCI_FLAG_PREFIX) == input_str) {
+		//input_str starts with HCI_FLAG_PREFIX flag so flag hci_mode
+		hci_mode = 1;
+		input_str += strlen(HCI_FLAG_PREFIX);  //skip to contents
+		printf("HCI mode enabled\n");
+	}
+	
+	printf("command_hex string: %s\n", input_str);
 
-	bin_buf_len = hex_str_to_bin(argv[1], bin_buf);
+	bin_buf_len = hex_str_to_bin(input_str, bin_buf);
 	printf("command_hex converted len: %d\n", bin_buf_len);
 	printf("command_hex converted contents: ");
 	print_hex(bin_buf, bin_buf_len);
@@ -115,12 +134,17 @@ int main(int argc, char **argv)
 		return -2;	
 	} 
 
-	int fd = mgmt_create();	
-	printf("mgmt_create ret %d\n", fd);
+	int sock_hci_channel = HCI_CHANNEL_CONTROL;  //default for mgmt api
+	if (hci_mode) {
+		sock_hci_channel = 0;
+	}
+	
+	int fd = sock_create(sock_hci_channel);	
+	printf("sock_create() ret %d\n", fd);
 	
 	if (fd < 0) {
-		printf("bzc_mgmt: FATAL: failed to open bluez mgmt socket"
-			"- make sure you have CAP_NET_ADMIN capability (or try run using root)"
+		printf("bzc_mgmt: FATAL: failed to open bluez mgmt socket\n"
+			"- make sure you have CAP_NET_ADMIN capability (or try run using root)\n"
 			"- ABORT\n");
 		return -3;
 	}
