@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#/usr/bin/env python3
 
-from __future__ import absolute_import, print_function, unicode_literals
+
 
 helpstr = """Use rfcomm.py (from the bluez-compassion project) to emulate *some* rfcomm functionality.
     Examples:
@@ -168,7 +168,7 @@ class Profile(dbus.service.Object):
         print("this_fd", str(this_fd))
 
         try:
-            for key in properties.keys():
+            for key in list(properties.keys()):
                 print("property: key:",key, "value:", properties[key])
                 if key == "Version" or key == "Features":
                     print("  %s = 0x%04x" % (key, properties[key]))
@@ -352,11 +352,11 @@ if __name__ == '__main__':
         print("creating the named-pipes... _rx and _tx")
         client_rxfp = g_named_pipe_to_create_path+"_rx"
         client_txfp = g_named_pipe_to_create_path+"_tx"
-        os.mkfifo(client_rxfp, 0666)
-        os.mkfifo(client_txfp, 0666)
+        os.mkfifo(client_rxfp, 0o666)
+        os.mkfifo(client_txfp, 0o666)
         # os.chmod() is somehow required on my system otherwise the rights are not 0666 yet
-        os.chmod(client_rxfp, 0666) 
-        os.chmod(client_txfp, 0666)
+        os.chmod(client_rxfp, 0o666) 
+        os.chmod(client_txfp, 0o666)
         print("Opening fd for client writes at: "+client_txfp)
         print('TIP: after connected, try send (in another terminal) using: echo "hello from server" > '+client_txfp)
         g_srcfd = os.open(client_txfp, os.O_RDONLY|os.O_NONBLOCK)
