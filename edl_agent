@@ -224,7 +224,9 @@ if __name__ == '__main__':
         if options.capability:
                 capability  = options.capability
 
-        mainloop = GObject.MainLoop()
+        #mainloop = GObject.MainLoop()
+        from gi.repository import GLib
+        mainloop = GLib.MainLoop()
 
         #try new bluez 5.7 code
         try:
